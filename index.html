@@ -767,8 +767,8 @@
             <p class="header-subtitle">Organize horários, procedimentos e valores em uma agenda delicada, simples e fácil de usar em qualquer aparelho.</p>
           </div>
           <div class="date-card" id="dateCard">
-            <label id="dateLabel">Data selecionada</label>
-            <input type="date" id="selectedDate" onchange="changeSelectedDate()" />
+            <label id="dateLabel">Mês da agenda</label>
+            <input type="month" id="agendaMonth" onchange="changeAgendaMonth()" />
           </div>
         </header>
 
@@ -807,7 +807,8 @@
 
             <div class="field">
               <label id="clientNameLabel">Nome da cliente</label>
-              <input id="clientName" placeholder="Ex: Maria Silva" />
+              <input id="clientName" placeholder="Ex: Maria Silva" list="clientSuggestions" oninput="applyClientSuggestion()" onchange="applyClientSuggestion(true)" />
+              <datalist id="clientSuggestions"></datalist>
             </div>
 
             <div class="two-cols">
@@ -906,10 +907,12 @@
     ];
 
     let selectedDate = todayISO();
+    let selectedAgendaMonth = todayISO().slice(0, 7);
     let selectedMonth = todayISO().slice(0, 7);
     let editingId = null;
     let selectedProceduresForm = [];
     let isPersonalCommitment = false;
+    let lastAutoClientName = "";
 
     function todayISO() {
       return new Date().toISOString().slice(0, 10);
@@ -989,10 +992,17 @@
       openPage("novo");
     }
 
-    function changeSelectedDate() {
-      const input = document.getElementById("selectedDate");
-      if (!input) return;
-      selectedDate = input.value;
+    function changeAgendaMonth() {
+      const input = document.getElementById("agendaMonth");
+      if (!input || !input.value) return;
+
+      selectedAgendaMonth = input.value;
+
+      if (!selectedDate || selectedDate.slice(0, 7) !== selectedAgendaMonth) {
+        const today = todayISO();
+        selectedDate = today.slice(0, 7) === selectedAgendaMonth ? today : `${selectedAgendaMonth}-01`;
+      }
+
       const clientDate = document.getElementById("clientDate");
       if (clientDate) clientDate.value = selectedDate;
       renderAll();
@@ -1040,24 +1050,28 @@
       if (!container) return;
       container.innerHTML = "";
 
-      for (let i = -3; i < 11; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        const iso = date.toISOString().slice(0, 10);
+      const month = selectedAgendaMonth || selectedDate.slice(0, 7);
+      const [year, monthNumber] = month.split("-").map(Number);
+      const daysInMonth = new Date(year, monthNumber, 0).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const iso = `${month}-${String(day).padStart(2, "0")}`;
+        const date = new Date(iso + "T00:00:00");
         const count = appointments.filter(item => item.date === iso).length;
 
         const button = document.createElement("button");
         button.className = "day-btn" + (iso === selectedDate ? " active" : "");
         button.innerHTML = `
-          <strong>${String(date.getDate()).padStart(2, "0")}</strong>
+          <strong>${String(day).padStart(2, "0")}</strong>
           <span>${date.toLocaleDateString("pt-BR", { weekday: "short" })}</span>
           ${count > 0 ? `<div class="day-count">${count} horário${count === 1 ? "" : "s"}</div>` : `<div class="day-count">Livre</div>`}
         `;
         button.onclick = () => {
           selectedDate = iso;
-          const selectedDateInput = document.getElementById("selectedDate");
+          selectedAgendaMonth = iso.slice(0, 7);
+          const agendaMonthInput = document.getElementById("agendaMonth");
           const clientDateInput = document.getElementById("clientDate");
-          if (selectedDateInput) selectedDateInput.value = iso;
+          if (agendaMonthInput) agendaMonthInput.value = selectedAgendaMonth;
           if (clientDateInput) clientDateInput.value = iso;
           renderAll();
         };
@@ -1185,6 +1199,79 @@
       if (finalTotal) finalTotal.innerText = formatMoney(total);
     }
 
+    function normalizeText(value) {
+      return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function getClientProfiles() {
+      const profiles = new Map();
+
+      appointments
+        .filter(item => item.appointmentType !== "personal" && item.clientName)
+        .sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`))
+        .forEach(item => {
+          const key = normalizeText(item.clientName);
+          const editableProcedures = Array.isArray(item.procedures)
+            ? item.procedures
+                .filter(procedure => Boolean(procedure.variablePrice))
+                .map(procedure => ({
+                  id: procedure.id,
+                  name: procedure.name,
+                  price: Number(procedure.price || 0),
+                  variablePrice: true
+                }))
+            : [];
+
+          const currentProfile = profiles.get(key) || {
+            name: item.clientName,
+            procedures: []
+          };
+
+          profiles.set(key, {
+            name: item.clientName,
+            // Autocomplete sempre mostra o nome da cliente.
+            // Serviço e valor só são puxados quando o procedimento tem valor editável/personalizado.
+            procedures: editableProcedures.length > 0 ? editableProcedures : currentProfile.procedures
+          });
+        });
+
+      return Array.from(profiles.values()).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+    }
+
+    function renderClientSuggestions() {
+      const datalist = document.getElementById("clientSuggestions");
+      if (!datalist) return;
+
+      datalist.innerHTML = getClientProfiles().map(profile => {
+        const summary = profile.procedures.length > 0
+          ? profile.procedures.map(item => `${item.name} ${formatMoney(item.price)}`).join(" + ")
+          : "Cliente cadastrada";
+        return `<option value="${profile.name}" label="${summary}"></option>`;
+      }).join("");
+    }
+
+    function applyClientSuggestion(force = false) {
+      if (isPersonalCommitment) return;
+
+      const input = document.getElementById("clientName");
+      if (!input) return;
+
+      const typedName = input.value.trim();
+      const profile = getClientProfiles().find(item => normalizeText(item.name) === normalizeText(typedName));
+      if (!profile) return;
+      if (!force && normalizeText(lastAutoClientName) === normalizeText(profile.name)) return;
+
+      lastAutoClientName = profile.name;
+
+      // Para clientes sem valor editável salvo, o sistema apenas completa o nome.
+      // Não puxa o último serviço fixo realizado.
+      if (!Array.isArray(profile.procedures) || profile.procedures.length === 0) return;
+
+      selectedProceduresForm = profile.procedures.map(procedure => ({ ...procedure }));
+      renderSelectedProcedures();
+      updateFinalTotal();
+    }
+
     async function saveAppointment() {
       const clientName = document.getElementById("clientName")?.value.trim();
       const date = document.getElementById("clientDate")?.value;
@@ -1215,6 +1302,7 @@
         else appointments.push(payloadLocal);
 
         selectedDate = date;
+        selectedAgendaMonth = date.slice(0, 7);
         clearForm();
         openPage("agenda");
         return;
@@ -1237,6 +1325,7 @@
       if (result.error) return showError(result.error);
 
       selectedDate = date;
+      selectedAgendaMonth = date.slice(0, 7);
       clearForm();
       await loadData();
       openPage("agenda");
@@ -1247,6 +1336,7 @@
       if (!item) return;
 
       editingId = item.id;
+      lastAutoClientName = item.clientName || "";
       isPersonalCommitment = item.appointmentType === "personal";
       selectedProceduresForm = isPersonalCommitment ? [] : item.procedures.map(procedure => ({ ...procedure }));
 
@@ -1280,6 +1370,7 @@
       editingId = null;
       selectedProceduresForm = [];
       isPersonalCommitment = false;
+      lastAutoClientName = "";
 
       const personal = document.getElementById("personalCommitment");
       const proceduresField = document.getElementById("proceduresField");
@@ -1411,17 +1502,18 @@
     }
 
     function renderAll() {
-      const selectedDateInput = document.getElementById("selectedDate");
+      const agendaMonthInput = document.getElementById("agendaMonth");
       const clientDateInput = document.getElementById("clientDate");
       const monthInput = document.getElementById("selectedMonth");
 
-      if (selectedDateInput) selectedDateInput.value = selectedDate;
+      if (agendaMonthInput) agendaMonthInput.value = selectedAgendaMonth;
       if (clientDateInput) clientDateInput.value = selectedDate;
       if (monthInput) monthInput.value = selectedMonth;
 
       renderCalendar();
       renderAppointments();
       renderProcedureSelect();
+      renderClientSuggestions();
       renderSelectedProcedures();
       renderProceduresList();
       renderFinancial();
