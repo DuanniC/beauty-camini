@@ -794,7 +794,13 @@
             <h3 id="formTitle">Novo atendimento</h3>
 
             <div class="field">
-              <label>Nome da cliente</label>
+              <label class="check-label" style="justify-content:flex-start; margin-bottom:14px;">
+                <input id="personalCommitment" type="checkbox" onchange="togglePersonalCommitment()" /> Compromisso pessoal / Médico
+              </label>
+            </div>
+
+            <div class="field">
+              <label id="clientNameLabel">Nome da cliente</label>
               <input id="clientName" placeholder="Ex: Maria Silva" />
             </div>
 
@@ -809,7 +815,7 @@
               </div>
             </div>
 
-            <div class="field">
+            <div class="field" id="proceduresField">
               <label>Procedimentos</label>
               <select id="procedureSelect" onchange="addSelectedProcedure()">
                 <option value="">Selecione um procedimento</option>
@@ -872,16 +878,17 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "https://qagegzvkebtaxizjilaq.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZ2VnenZrZWJ0YXhpemppbGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDQ0OTAsImV4cCI6MjA5MzYyMDQ5MH0.bPw9WWl9bKd9g1N7LnNLgXats0mwsOfR8mkBN_1XaIc";
+    const SUPABASE_URL = "https://qagegzvkebtaxizjilaq.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhZ2VnenZrZWJ0YXhpemppbGFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwNDQ0OTAsImV4cCI6MjA5MzYyMDQ5MH0.bPw9WWl9bKd9g1N7LnNLgXats0mwsOfR8mkBN_1XaIc"; 
+    
     const SUPABASE_CONFIGURADO =
+      typeof window.supabase !== "undefined" &&
       SUPABASE_URL &&
       SUPABASE_ANON_KEY &&
       !SUPABASE_URL.includes("COLE_AQUI") &&
-      !SUPABASE_ANON_KEY.includes("COLE_AQUI") &&
-      window.supabase;
+      !SUPABASE_ANON_KEY.includes("COLE_AQUI");
 
-    const db = SUPABASE_CONFIGURADO ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    const db = SUPABASE_CONFIGURADO ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     let appointments = [];
     let procedures = [
@@ -891,10 +898,12 @@
       { id: 4, name: "Depilação", price: 45, variablePrice: false },
       { id: 5, name: "Escova", price: 60, variablePrice: false }
     ];
+
     let selectedDate = todayISO();
     let selectedMonth = todayISO().slice(0, 7);
     let editingId = null;
     let selectedProceduresForm = [];
+    let isPersonalCommitment = false;
 
     function todayISO() {
       return new Date().toISOString().slice(0, 10);
@@ -912,30 +921,16 @@
 
     async function loadData() {
       if (!SUPABASE_CONFIGURADO) {
-        console.warn("Supabase ainda não configurado. O site está rodando em modo visual/teste.");
+        console.warn("Supabase ainda não configurado. O site está rodando em modo teste.");
         renderAll();
         return;
       }
-      const proceduresResult = await db
-        .from("procedures")
-        .select("*")
-        .order("name", { ascending: true });
 
-      if (proceduresResult.error) {
-        showError(proceduresResult.error);
-        return;
-      }
+      const proceduresResult = await db.from("procedures").select("*").order("name", { ascending: true });
+      if (proceduresResult.error) return showError(proceduresResult.error);
 
-      const schedulesResult = await db
-        .from("schedules")
-        .select("*")
-        .order("date", { ascending: true })
-        .order("time", { ascending: true });
-
-      if (schedulesResult.error) {
-        showError(schedulesResult.error);
-        return;
-      }
+      const schedulesResult = await db.from("schedules").select("*").order("date", { ascending: true }).order("time", { ascending: true });
+      if (schedulesResult.error) return showError(schedulesResult.error);
 
       procedures = proceduresResult.data.map(item => ({
         id: item.id,
@@ -948,8 +943,9 @@
         id: item.id,
         clientName: item.client_name,
         date: item.date,
-        time: String(item.time).slice(0, 5),
+        time: String(item.time || "").slice(0, 5),
         notes: item.notes || "",
+        appointmentType: item.appointment_type || "client",
         procedures: item.procedures || [],
         total: Number(item.total || 0)
       }));
@@ -959,10 +955,12 @@
 
     function openPage(page) {
       document.querySelectorAll(".page-section").forEach(item => item.classList.remove("active"));
-      document.getElementById("page-" + page).classList.add("active");
+      const pageElement = document.getElementById("page-" + page);
+      if (pageElement) pageElement.classList.add("active");
 
       document.querySelectorAll(".nav button").forEach(item => item.classList.remove("active"));
-      document.getElementById("btn-" + page).classList.add("active");
+      const buttonElement = document.getElementById("btn-" + page);
+      if (buttonElement) buttonElement.classList.add("active");
 
       const titles = {
         agenda: "Agenda Beauty Camini",
@@ -970,19 +968,12 @@
         procedimentos: "Procedimentos e valores",
         financeiro: "Resumo financeiro"
       };
-      document.getElementById("pageTitle").innerText = titles[page];
+
+      const title = document.getElementById("pageTitle");
+      if (title) title.innerText = titles[page] || "Beauty Camini";
 
       const dateCard = document.getElementById("dateCard");
-      const selectedDateInput = document.getElementById("selectedDate");
-      const dateLabel = document.getElementById("dateLabel");
-
-      if (page === "procedimentos" || page === "financeiro") {
-        dateCard.style.display = "none";
-      } else {
-        dateCard.style.display = "block";
-        selectedDateInput.type = "date";
-        dateLabel.innerText = "Data selecionada";
-      }
+      if (dateCard) dateCard.style.display = (page === "procedimentos" || page === "financeiro") ? "none" : "block";
 
       renderAll();
     }
@@ -993,18 +984,54 @@
     }
 
     function changeSelectedDate() {
-      selectedDate = document.getElementById("selectedDate").value;
-      document.getElementById("clientDate").value = selectedDate;
+      const input = document.getElementById("selectedDate");
+      if (!input) return;
+      selectedDate = input.value;
+      const clientDate = document.getElementById("clientDate");
+      if (clientDate) clientDate.value = selectedDate;
       renderAll();
     }
 
     function changeSelectedMonth() {
-      selectedMonth = document.getElementById("selectedMonth").value;
+      const input = document.getElementById("selectedMonth");
+      if (!input) return;
+      selectedMonth = input.value;
       renderFinancial();
+    }
+
+    function togglePersonalCommitment() {
+      const checkbox = document.getElementById("personalCommitment");
+      if (!checkbox) return;
+
+      isPersonalCommitment = checkbox.checked;
+      const proceduresField = document.getElementById("proceduresField");
+      const clientNameLabel = document.getElementById("clientNameLabel");
+      const clientNameInput = document.getElementById("clientName");
+
+      if (isPersonalCommitment) {
+        if (proceduresField) proceduresField.style.display = "none";
+        selectedProceduresForm = [];
+        if (clientNameLabel) clientNameLabel.innerText = "Compromisso";
+        if (clientNameInput) {
+          clientNameInput.placeholder = "Ex: Médico";
+          if (!clientNameInput.value.trim()) clientNameInput.value = "Médico";
+        }
+      } else {
+        if (proceduresField) proceduresField.style.display = "block";
+        if (clientNameLabel) clientNameLabel.innerText = "Nome da cliente";
+        if (clientNameInput) {
+          clientNameInput.placeholder = "Ex: Maria Silva";
+          if (clientNameInput.value.trim() === "Médico") clientNameInput.value = "";
+        }
+      }
+
+      renderSelectedProcedures();
+      updateFinalTotal();
     }
 
     function renderCalendar() {
       const container = document.getElementById("calendarDays");
+      if (!container) return;
       container.innerHTML = "";
 
       for (let i = -3; i < 11; i++) {
@@ -1022,8 +1049,10 @@
         `;
         button.onclick = () => {
           selectedDate = iso;
-          document.getElementById("selectedDate").value = iso;
-          document.getElementById("clientDate").value = iso;
+          const selectedDateInput = document.getElementById("selectedDate");
+          const clientDateInput = document.getElementById("clientDate");
+          if (selectedDateInput) selectedDateInput.value = iso;
+          if (clientDateInput) clientDateInput.value = iso;
           renderAll();
         };
         container.appendChild(button);
@@ -1032,8 +1061,9 @@
 
     function renderAppointments() {
       const list = document.getElementById("appointmentsList");
-      const search = (document.getElementById("searchClient")?.value || "").toLowerCase();
+      if (!list) return;
 
+      const search = (document.getElementById("searchClient")?.value || "").toLowerCase();
       const dayItems = appointments
         .filter(item => item.date === selectedDate)
         .filter(item => item.clientName.toLowerCase().includes(search))
@@ -1051,12 +1081,14 @@
               <h4>${item.clientName}</h4>
               <p>${item.date.split("-").reverse().join("/")} às ${item.time}</p>
               <div class="chips">
-                ${item.procedures.map(procedure => `<span class="chip">${procedure.name} · ${formatMoney(procedure.price)}</span>`).join("")}
+                ${item.appointmentType === "personal"
+                  ? `<span class="chip">Compromisso pessoal</span>`
+                  : item.procedures.map(procedure => `<span class="chip">${procedure.name} · ${formatMoney(procedure.price)}</span>`).join("")}
               </div>
               ${item.notes ? `<p>Obs: ${item.notes}</p>` : ""}
             </div>
             <div class="appointment-actions">
-              <span class="appointment-value">${formatMoney(item.total)}</span>
+              <span class="appointment-value">${item.appointmentType === "personal" ? "Sem valor" : formatMoney(item.total)}</span>
               <button class="btn secondary" onclick="editAppointment(${item.id})">Editar</button>
               <button class="btn danger" onclick="deleteAppointment(${item.id})">Excluir</button>
             </div>
@@ -1067,6 +1099,7 @@
 
     function renderProcedureSelect() {
       const select = document.getElementById("procedureSelect");
+      if (!select) return;
       select.innerHTML = `<option value="">Selecione um procedimento</option>`;
 
       procedures.forEach(item => {
@@ -1079,13 +1112,14 @@
 
     function addSelectedProcedure() {
       const select = document.getElementById("procedureSelect");
+      if (!select) return;
       const id = Number(select.value);
       if (!id) return;
 
-      const procedure = procedures.find(item => item.id === id);
+      const procedure = procedures.find(item => Number(item.id) === id);
       if (!procedure) return;
 
-      const alreadySelected = selectedProceduresForm.some(item => item.id === id);
+      const alreadySelected = selectedProceduresForm.some(item => Number(item.id) === id);
       if (!alreadySelected) {
         selectedProceduresForm.push({
           id: procedure.id,
@@ -1101,6 +1135,13 @@
 
     function renderSelectedProcedures() {
       const container = document.getElementById("selectedProcedures");
+      if (!container) return;
+
+      if (isPersonalCommitment) {
+        container.innerHTML = "";
+        updateFinalTotal();
+        return;
+      }
 
       if (selectedProceduresForm.length === 0) {
         container.innerHTML = `<div class="empty" style="padding:14px;">Nenhum procedimento selecionado</div>`;
@@ -1123,42 +1164,34 @@
     }
 
     function changeSelectedProcedurePrice(id, value) {
-      selectedProceduresForm = selectedProceduresForm.map(item => item.id === id ? { ...item, price: Number(value || 0) } : item);
+      selectedProceduresForm = selectedProceduresForm.map(item => Number(item.id) === Number(id) ? { ...item, price: Number(value || 0) } : item);
       updateFinalTotal();
     }
 
     function removeSelectedProcedure(id) {
-      selectedProceduresForm = selectedProceduresForm.filter(item => item.id !== id);
+      selectedProceduresForm = selectedProceduresForm.filter(item => Number(item.id) !== Number(id));
       renderSelectedProcedures();
     }
 
     function updateFinalTotal() {
-      const total = selectedProceduresForm.reduce((sum, item) => sum + Number(item.price || 0), 0);
-      document.getElementById("finalTotal").innerText = formatMoney(total);
+      const total = isPersonalCommitment ? 0 : selectedProceduresForm.reduce((sum, item) => sum + Number(item.price || 0), 0);
+      const finalTotal = document.getElementById("finalTotal");
+      if (finalTotal) finalTotal.innerText = formatMoney(total);
     }
 
     async function saveAppointment() {
-      const clientName = document.getElementById("clientName").value.trim();
-      const date = document.getElementById("clientDate").value;
-      const time = document.getElementById("clientTime").value;
-      const notes = document.getElementById("clientNotes").value.trim();
+      const clientName = document.getElementById("clientName")?.value.trim();
+      const date = document.getElementById("clientDate")?.value;
+      const time = document.getElementById("clientTime")?.value;
+      const notes = document.getElementById("clientNotes")?.value.trim();
 
-      if (!clientName || !date || !time || selectedProceduresForm.length === 0) {
-        alert("Preencha nome, data, horário e pelo menos um procedimento.");
+      if (!clientName || !date || !time || (!isPersonalCommitment && selectedProceduresForm.length === 0)) {
+        alert(isPersonalCommitment ? "Preencha o compromisso, data e horário." : "Preencha nome, data, horário e pelo menos um procedimento.");
         return;
       }
 
-      const proceduresPayload = selectedProceduresForm.map(item => ({ ...item, price: Number(item.price || 0) }));
-      const total = proceduresPayload.reduce((sum, item) => sum + Number(item.price || 0), 0);
-
-      const payload = {
-        client_name: clientName,
-        date: date,
-        time: time,
-        notes: notes,
-        procedures: proceduresPayload,
-        total: total
-      };
+      const proceduresPayload = isPersonalCommitment ? [] : selectedProceduresForm.map(item => ({ ...item, price: Number(item.price || 0) }));
+      const total = isPersonalCommitment ? 0 : proceduresPayload.reduce((sum, item) => sum + Number(item.price || 0), 0);
 
       if (!SUPABASE_CONFIGURADO) {
         const payloadLocal = {
@@ -1167,15 +1200,13 @@
           date,
           time,
           notes,
+          appointmentType: isPersonalCommitment ? "personal" : "client",
           procedures: proceduresPayload,
           total
         };
 
-        if (editingId) {
-          appointments = appointments.map(item => item.id === editingId ? payloadLocal : item);
-        } else {
-          appointments.push(payloadLocal);
-        }
+        if (editingId) appointments = appointments.map(item => item.id === editingId ? payloadLocal : item);
+        else appointments.push(payloadLocal);
 
         selectedDate = date;
         clearForm();
@@ -1183,17 +1214,21 @@
         return;
       }
 
-      let result;
-      if (editingId) {
-        result = await db.from("schedules").update(payload).eq("id", editingId).select();
-      } else {
-        result = await db.from("schedules").insert(payload).select();
-      }
+      const payload = {
+        client_name: clientName,
+        date,
+        time,
+        notes,
+        appointment_type: isPersonalCommitment ? "personal" : "client",
+        procedures: proceduresPayload,
+        total
+      };
 
-      if (result.error) {
-        showError(result.error);
-        return;
-      }
+      const result = editingId
+        ? await db.from("schedules").update(payload).eq("id", editingId).select()
+        : await db.from("schedules").insert(payload).select();
+
+      if (result.error) return showError(result.error);
 
       selectedDate = date;
       clearForm();
@@ -1202,49 +1237,67 @@
     }
 
     function editAppointment(id) {
-      const item = appointments.find(appointment => appointment.id === id);
+      const item = appointments.find(appointment => Number(appointment.id) === Number(id));
       if (!item) return;
 
-      editingId = id;
-      selectedProceduresForm = item.procedures.map(procedure => ({ ...procedure }));
+      editingId = item.id;
+      isPersonalCommitment = item.appointmentType === "personal";
+      selectedProceduresForm = isPersonalCommitment ? [] : item.procedures.map(procedure => ({ ...procedure }));
 
       document.getElementById("clientName").value = item.clientName;
       document.getElementById("clientDate").value = item.date;
       document.getElementById("clientTime").value = item.time;
       document.getElementById("clientNotes").value = item.notes || "";
-      document.getElementById("formTitle").innerText = "Editar atendimento";
+      document.getElementById("personalCommitment").checked = isPersonalCommitment;
+      document.getElementById("formTitle").innerText = isPersonalCommitment ? "Editar compromisso" : "Editar atendimento";
 
+      togglePersonalCommitment();
       renderSelectedProcedures();
       openPage("novo");
     }
 
     async function deleteAppointment(id) {
-      if (!confirm("Deseja excluir este atendimento?")) return;
+      if (!confirm("Deseja excluir este item?")) return;
 
       if (!SUPABASE_CONFIGURADO) {
-        appointments = appointments.filter(item => item.id !== id);
+        appointments = appointments.filter(item => Number(item.id) !== Number(id));
         renderAll();
         return;
       }
 
       const result = await db.from("schedules").delete().eq("id", id);
-      if (result.error) {
-        showError(result.error);
-        return;
-      }
-
+      if (result.error) return showError(result.error);
       await loadData();
     }
 
     function clearForm() {
       editingId = null;
       selectedProceduresForm = [];
-      document.getElementById("clientName").value = "";
-      document.getElementById("clientDate").value = selectedDate;
-      document.getElementById("clientTime").value = "09:00";
-      document.getElementById("clientNotes").value = "";
-      document.getElementById("formTitle").innerText = "Novo atendimento";
+      isPersonalCommitment = false;
+
+      const personal = document.getElementById("personalCommitment");
+      const proceduresField = document.getElementById("proceduresField");
+      const nameLabel = document.getElementById("clientNameLabel");
+      const name = document.getElementById("clientName");
+      const date = document.getElementById("clientDate");
+      const time = document.getElementById("clientTime");
+      const notes = document.getElementById("clientNotes");
+      const title = document.getElementById("formTitle");
+
+      if (personal) personal.checked = false;
+      if (proceduresField) proceduresField.style.display = "block";
+      if (nameLabel) nameLabel.innerText = "Nome da cliente";
+      if (name) {
+        name.placeholder = "Ex: Maria Silva";
+        name.value = "";
+      }
+      if (date) date.value = selectedDate;
+      if (time) time.value = "09:00";
+      if (notes) notes.value = "";
+      if (title) title.innerText = "Novo atendimento";
+
       renderSelectedProcedures();
+      updateFinalTotal();
     }
 
     function cancelEdit() {
@@ -1254,6 +1307,8 @@
 
     function renderProceduresList() {
       const list = document.getElementById("proceduresList");
+      if (!list) return;
+
       list.innerHTML = procedures.map(item => `
         <div class="procedure-row">
           <input value="${item.name}" onchange="updateProcedure(${item.id}, 'name', this.value)" />
@@ -1269,9 +1324,9 @@
     async function updateProcedure(id, field, value) {
       if (!SUPABASE_CONFIGURADO) {
         procedures = procedures.map(item => {
-          if (item.id !== id) return item;
-          const key = field === "variable_price" ? "variablePrice" : field;
-          return { ...item, [key]: key === "price" ? Number(value || 0) : value };
+          if (Number(item.id) !== Number(id)) return item;
+          const localField = field === "variable_price" ? "variablePrice" : field;
+          return { ...item, [localField]: localField === "price" ? Number(value || 0) : value };
         });
         renderAll();
         return;
@@ -1279,20 +1334,15 @@
 
       const payload = {};
       payload[field] = field === "price" ? Number(value || 0) : value;
-
       const result = await db.from("procedures").update(payload).eq("id", id).select();
-      if (result.error) {
-        showError(result.error);
-        return;
-      }
-
+      if (result.error) return showError(result.error);
       await loadData();
     }
 
     async function addProcedure() {
-      const name = document.getElementById("newProcedureName").value.trim();
-      const price = Number(document.getElementById("newProcedurePrice").value || 0);
-      const variablePrice = document.getElementById("newProcedureEditable").checked;
+      const name = document.getElementById("newProcedureName")?.value.trim();
+      const price = Number(document.getElementById("newProcedurePrice")?.value || 0);
+      const variablePrice = document.getElementById("newProcedureEditable")?.checked || false;
 
       if (!name || !price) {
         alert("Preencha o nome e o valor do procedimento.");
@@ -1308,16 +1358,8 @@
         return;
       }
 
-      const result = await db.from("procedures").insert({
-        name: name,
-        price: price,
-        variable_price: variablePrice
-      }).select();
-
-      if (result.error) {
-        showError(result.error);
-        return;
-      }
+      const result = await db.from("procedures").insert({ name, price, variable_price: variablePrice }).select();
+      if (result.error) return showError(result.error);
 
       document.getElementById("newProcedureName").value = "";
       document.getElementById("newProcedurePrice").value = "";
@@ -1329,19 +1371,14 @@
       if (!confirm("Deseja remover este procedimento?")) return;
 
       if (!SUPABASE_CONFIGURADO) {
-        procedures = procedures.filter(item => item.id !== id);
-        selectedProceduresForm = selectedProceduresForm.filter(item => item.id !== id);
+        procedures = procedures.filter(item => Number(item.id) !== Number(id));
+        selectedProceduresForm = selectedProceduresForm.filter(item => Number(item.id) !== Number(id));
         renderAll();
         return;
       }
 
       const result = await db.from("procedures").delete().eq("id", id);
-      if (result.error) {
-        showError(result.error);
-        return;
-      }
-
-      selectedProceduresForm = selectedProceduresForm.filter(item => item.id !== id);
+      if (result.error) return showError(result.error);
       await loadData();
     }
 
@@ -1358,21 +1395,24 @@
 
     function renderFinancial() {
       const month = selectedMonth || selectedDate.slice(0, 7);
-      const monthItems = appointments.filter(item => item.date.slice(0, 7) === month);
-      const sum = items => items.reduce((total, item) => total + Number(item.total || 0), 0);
+      const monthItems = appointments.filter(item => item.date.slice(0, 7) === month && item.appointmentType !== "personal");
+      const total = monthItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
 
       const monthInput = document.getElementById("selectedMonth");
-      if (monthInput) monthInput.value = month;
-
       const monthTotal = document.getElementById("monthTotal");
-      if (monthTotal) monthTotal.innerText = formatMoney(sum(monthItems));
+      if (monthInput) monthInput.value = month;
+      if (monthTotal) monthTotal.innerText = formatMoney(total);
     }
 
     function renderAll() {
-      document.getElementById("selectedDate").value = selectedDate;
-      document.getElementById("clientDate").value = selectedDate;
+      const selectedDateInput = document.getElementById("selectedDate");
+      const clientDateInput = document.getElementById("clientDate");
       const monthInput = document.getElementById("selectedMonth");
+
+      if (selectedDateInput) selectedDateInput.value = selectedDate;
+      if (clientDateInput) clientDateInput.value = selectedDate;
       if (monthInput) monthInput.value = selectedMonth;
+
       renderCalendar();
       renderAppointments();
       renderProcedureSelect();
