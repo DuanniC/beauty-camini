@@ -8,15 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Beauty Camini">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <!-- Favicon para navegadores (Chrome, Firefox, Safari) -->
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="180x180" href="favicon.png">
-  <!-- Ícones para iOS (adicionar à tela de início) -->
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon.png">
-  <link rel="apple-touch-icon" sizes="144x144" href="apple-touch-icon.png">
-  <link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon.png">
+  
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.svg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -117,7 +112,7 @@
     .brand-icon::before {
       content: "✦";
       color: white;
-      font-size: 24px;
+      font-size: 30px;
       line-height: 1;
       opacity: .95;
       transform: rotate(12deg);
@@ -263,7 +258,7 @@
 
     .agenda-grid {
       display: grid;
-      grid-template-columns: 310px 1fr;
+      grid-template-columns: 420px 1fr;
       gap: 22px;
       align-items: start;
     }
@@ -277,7 +272,7 @@
     }
 
     .day-btn {
-      min-height: 92px;
+      min-height: 115px;
       min-width: 0;
       width: 100%;
       border: 0;
@@ -778,8 +773,12 @@
         <section id="page-agenda" class="page-section active">
           <div class="agenda-grid">
             <div class="card">
-              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
-                <h3 style="margin:0;">Calendário</h3>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <button class="btn secondary" onclick="changeMonth(-1)">◀</button>
+                  <h3 id="calendarMonthTitle" style="margin:0;">Calendário</h3>
+                  <button class="btn secondary" onclick="changeMonth(1)">▶</button>
+                </div>
                 <button class="btn" onclick="newAppointment()">Novo</button>
               </div>
               <div id="calendarDays" class="days"></div>
@@ -1001,7 +1000,25 @@
       renderAll();
     }
 
-    function changeSelectedMonth() {
+    
+function changeMonth(direction) {
+      const current = new Date(selectedDate + "T00:00:00");
+      current.setMonth(current.getMonth() + direction);
+
+      const newDate = current.toISOString().slice(0, 10);
+
+      selectedDate = newDate;
+
+      const selectedDateInput = document.getElementById("selectedDate");
+      const clientDateInput = document.getElementById("clientDate");
+
+      if (selectedDateInput) selectedDateInput.value = newDate;
+      if (clientDateInput) clientDateInput.value = newDate;
+
+      renderAll();
+    }
+
+function changeSelectedMonth() {
       const input = document.getElementById("selectedMonth");
       if (!input) return;
       selectedMonth = input.value;
@@ -1038,35 +1055,56 @@
       updateFinalTotal();
     }
 
-    function renderCalendar() {
+    
+function renderCalendar() {
       const container = document.getElementById("calendarDays");
       if (!container) return;
+
       container.innerHTML = "";
 
-      for (let i = -3; i < 11; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
+      const current = new Date(selectedDate + "T00:00:00");
+      const year = current.getFullYear();
+      const month = current.getMonth();
+
+      const monthTitle = document.getElementById("calendarMonthTitle");
+      if (monthTitle) {
+        monthTitle.innerText = current.toLocaleDateString("pt-BR", {
+          month: "long",
+          year: "numeric"
+        });
+      }
+
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, month, day);
         const iso = date.toISOString().slice(0, 10);
         const count = appointments.filter(item => item.date === iso).length;
 
         const button = document.createElement("button");
         button.className = "day-btn" + (iso === selectedDate ? " active" : "");
         button.innerHTML = `
-          <strong>${String(date.getDate()).padStart(2, "0")}</strong>
+          <strong>${String(day).padStart(2, "0")}</strong>
           <span>${date.toLocaleDateString("pt-BR", { weekday: "short" })}</span>
           ${count > 0 ? `<div class="day-count">${count} horário${count === 1 ? "" : "s"}</div>` : `<div class="day-count">Livre</div>`}
         `;
+
         button.onclick = () => {
           selectedDate = iso;
           const selectedDateInput = document.getElementById("selectedDate");
           const clientDateInput = document.getElementById("clientDate");
+
           if (selectedDateInput) selectedDateInput.value = iso;
           if (clientDateInput) clientDateInput.value = iso;
+
           renderAll();
         };
+
         container.appendChild(button);
       }
     }
+
 
     function renderAppointments() {
       const list = document.getElementById("appointmentsList");
