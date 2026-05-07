@@ -1944,17 +1944,25 @@
       const dateLabel = document.getElementById("representativeDateLabel");
       const boughtInput = document.getElementById("representativeValue");
       const paidInput = document.getElementById("representativePaymentValue");
+      const descriptionInput = document.getElementById("representativeDescription");
+      const defaultPaymentDescription = "Pix Pagseguro";
 
       if (type === "payment") {
         if (boughtField) boughtField.style.display = "none";
         if (paidField) paidField.style.display = "";
         if (dateLabel) dateLabel.innerText = "Data do pagamento";
         if (boughtInput) boughtInput.value = "";
+        if (descriptionInput && !descriptionInput.value.trim()) {
+          descriptionInput.value = defaultPaymentDescription;
+        }
       } else {
         if (boughtField) boughtField.style.display = "";
         if (paidField) paidField.style.display = "none";
         if (dateLabel) dateLabel.innerText = "Data da compra";
         if (paidInput) paidInput.value = "";
+        if (descriptionInput && descriptionInput.value.trim() === defaultPaymentDescription) {
+          descriptionInput.value = "";
+        }
       }
     }
 
