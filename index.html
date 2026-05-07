@@ -871,7 +871,21 @@
       }
     }
 
-  </style>
+  
+.rep-table{
+  table-layout: fixed;
+}
+
+.rep-table td,
+.rep-table th{
+  word-break: break-word;
+}
+
+.rep-table th:first-child,
+.rep-table td:first-child{
+  width: 20%;
+}
+</style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -954,6 +968,20 @@
 .rep-payment-cancel{
   background:#f2effc;
 }
+
+.rep-table{
+  table-layout: fixed;
+}
+
+.rep-table td,
+.rep-table th{
+  word-break: break-word;
+}
+
+.rep-table th:first-child,
+.rep-table td:first-child{
+  width: 20%;
+}
 </style>
 
 <style>
@@ -1020,6 +1048,20 @@
   #page-sueli .rep-form-grid{
     grid-template-columns:1fr !important;
   }
+}
+
+.rep-table{
+  table-layout: fixed;
+}
+
+.rep-table td,
+.rep-table th{
+  word-break: break-word;
+}
+
+.rep-table th:first-child,
+.rep-table td:first-child{
+  width: 20%;
 }
 </style>
 
@@ -1169,13 +1211,9 @@
   }
 
   #page-sueli .rep-table td:nth-child(1)::before{ content:'Produto'; }
-  #page-sueli .rep-table td:nth-child(2)::before{ content:'Comprado'; }
+  #page-sueli .rep-table td:nth-child(2)::before{ content:'Valor'; }
   #page-sueli .rep-table td:nth-child(3)::before{ content:'Data'; }
-  #page-sueli .rep-table td:nth-child(4)::before{ content:'Pago'; }
-  #page-sueli .rep-table td:nth-child(5)::before{ content:'Aberto'; }
-  #page-sueli .rep-table td:nth-child(6)::before{ content:'Status'; }
-  #page-sueli .rep-table td:nth-child(7)::before{ content:'Pagamentos'; }
-  #page-sueli .rep-table td:nth-child(8)::before{ content:'Ações'; }
+  #page-sueli .rep-table td:nth-child(4)::before{ content:'Ações'; }
 
   #page-sueli .rep-actions{
     display:grid !important;
@@ -1190,6 +1228,20 @@
     justify-content:center !important;
     white-space:normal !important;
   }
+}
+
+.rep-table{
+  table-layout: fixed;
+}
+
+.rep-table td,
+.rep-table th{
+  word-break: break-word;
+}
+
+.rep-table th:first-child,
+.rep-table td:first-child{
+  width: 20%;
 }
 </style>
 
@@ -1355,7 +1407,7 @@
   </div>
 
   <div class="field" id="representativeBoughtField">
-    <label>Valor comprado</label>
+    <label>Valor</label>
     <input id="representativeValue" type="number" min="0" step="0.01" placeholder="0,00" />
   </div>
 
@@ -1377,12 +1429,8 @@
                 <thead>
                   <tr>
                     <th>Produto e descrição</th>
-                    <th>Valor comprado</th>
-                    <th>Data da compra</th>
-                    <th>Valor pago</th>
-                    <th>Valor em aberto</th>
-                    <th>Status</th>
-                    <th>Pagamentos</th>
+                    <th>Valor</th>
+                    <th>Data</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -2452,7 +2500,7 @@ async function saveRepresentativePaymentModal() {
       if (!list) return;
 
       if (!yearItems.length) {
-        list.innerHTML = `<tr><td colspan="8"><div class="rep-empty">Nenhum item cadastrado para ${selectedRepresentativeYear}.</div></td></tr>`;
+        list.innerHTML = `<tr><td colspan="4"><div class="rep-empty">Nenhum item cadastrado para ${selectedRepresentativeYear}.</div></td></tr>`;
         return;
       }
 
@@ -2470,10 +2518,6 @@ async function saveRepresentativePaymentModal() {
           <td>${item.description}</td>
           <td>${formatMoney(item.value)}</td>
           <td>${formatDateBR(item.buyDate)}</td>
-          <td>${formatMoney(paidTotal)}</td>
-          <td>${formatMoney(openValue)}</td>
-          <td><span class="rep-status ${statusClass}">${status}</span></td>
-          <td>${paymentsText}</td>
           <td>
             <div class="rep-actions">
               ${openValue > 0 ? `` : ""}
