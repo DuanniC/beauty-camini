@@ -2516,7 +2516,7 @@ async function saveRepresentativePaymentModal() {
         return `
         <tr>
           <td>${item.description}</td>
-          <td>${formatMoney(item.value)}</td>
+          <td>${formatMoney(item.value || paidTotal)}</td>
           <td>${formatDateBR(item.buyDate)}</td>
           <td>
             <div class="rep-actions">
