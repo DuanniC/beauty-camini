@@ -735,7 +735,6 @@
       }
     }
 
-
     .rep-toolbar {
       display: flex;
       align-items: center;
@@ -870,6 +869,156 @@
 
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+.rep-payment-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(20,16,35,.45);
+  backdrop-filter:blur(6px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+  padding:20px;
+}
+
+.rep-payment-modal.active{
+  display:flex;
+}
+
+.rep-payment-box{
+  width:100%;
+  max-width:420px;
+  background:white;
+  border-radius:28px;
+  padding:26px;
+  position:relative;
+  box-shadow:0 25px 70px rgba(35,20,60,.25);
+}
+
+.rep-payment-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:36px;
+  height:36px;
+  border:none;
+  border-radius:50%;
+  background:#f2effc;
+  cursor:pointer;
+  font-size:20px;
+}
+
+.rep-payment-field{
+  margin-top:18px;
+}
+
+.rep-payment-field label{
+  display:block;
+  margin-bottom:8px;
+  font-weight:700;
+}
+
+.rep-payment-field input{
+  width:100%;
+  height:50px;
+  border-radius:16px;
+  border:1px solid #ddd6f7;
+  padding:0 14px;
+}
+
+.rep-payment-actions{
+  display:flex;
+  gap:12px;
+  margin-top:24px;
+}
+
+.rep-payment-actions button{
+  flex:1;
+  height:48px;
+  border:none;
+  border-radius:16px;
+  cursor:pointer;
+}
+
+.rep-payment-save{
+  background:#6c5aa8;
+  color:white;
+}
+
+.rep-payment-cancel{
+  background:#f2effc;
+}
+</style>
+
+<style>
+/* Formulário Sueli - compra/pagamento avulso */
+#page-sueli .rep-form-grid{
+  display:grid !important;
+  grid-template-columns: 170px minmax(260px, 1fr) 170px 170px 120px !important;
+  gap:12px !important;
+  align-items:end !important;
+  background:#f2effc !important;
+  border-radius:24px !important;
+  padding:16px !important;
+  margin:20px 0 !important;
+}
+
+#page-sueli .rep-form-grid .field{
+  margin:0 !important;
+}
+
+#page-sueli .rep-form-grid label{
+  display:block !important;
+  margin:0 0 8px !important;
+  color:#4d4373 !important;
+  font-size:13px !important;
+  font-weight:800 !important;
+}
+
+#page-sueli .rep-form-grid input,
+#page-sueli .rep-form-grid select{
+  width:100% !important;
+  height:52px !important;
+  border-radius:16px !important;
+  border:1px solid #ddd6f7 !important;
+  background:#fff !important;
+  padding:0 14px !important;
+  font-size:15px !important;
+  color:#2f2942 !important;
+  outline:none !important;
+}
+
+#page-sueli .rep-form-grid .btn{
+  width:100% !important;
+  height:52px !important;
+  margin:0 !important;
+  align-self:end !important;
+  border-radius:16px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  white-space:nowrap !important;
+}
+
+@media (max-width: 1050px){
+  #page-sueli .rep-form-grid{
+    grid-template-columns:1fr 1fr !important;
+  }
+
+  #page-sueli .rep-form-grid .btn{
+    grid-column:1 / -1 !important;
+  }
+}
+
+@media (max-width: 620px){
+  #page-sueli .rep-form-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div class="page">
@@ -1000,8 +1149,6 @@
           </div>
         </section>
 
-
-
         <section id="page-sueli" class="page-section">
           <div class="card form-card" style="max-width:1120px;">
             <div class="rep-toolbar">
@@ -1030,21 +1177,37 @@
               </div>
             </div>
 
-            <div class="rep-form-grid">
-              <div class="field" style="margin:0;">
-                <label>Produto e descrição</label>
-                <input id="representativeDescription" placeholder="Ex: Shampoo 1L, máscara, finalizador..." />
-              </div>
-              <div class="field" style="margin:0;">
-                <label>Valor comprado</label>
-                <input id="representativeValue" type="number" min="0" step="0.01" placeholder="0,00" />
-              </div>
-              <div class="field" style="margin:0;">
-                <label>Data da compra</label>
-                <input id="representativeBuyDate" type="date" />
-              </div>
-              <button class="btn" onclick="addRepresentativeItem()">Adicionar</button>
-            </div>
+<div class="rep-form-grid">
+  <div class="field">
+    <label>Tipo</label>
+    <select id="representativeType" onchange="toggleRepresentativeType()">
+      <option value="purchase">Compra</option>
+      <option value="payment">Pagamento</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Produto e descrição</label>
+    <input id="representativeDescription" placeholder="Ex: Shampoo 1L, máscara, finalizador..." />
+  </div>
+
+  <div class="field" id="representativeBoughtField">
+    <label>Valor comprado</label>
+    <input id="representativeValue" type="number" min="0" step="0.01" placeholder="0,00" />
+  </div>
+
+  <div class="field" id="representativePaidField" style="display:none;">
+    <label>Valor pago</label>
+    <input id="representativePaymentValue" type="number" min="0" step="0.01" placeholder="0,00" />
+  </div>
+
+  <div class="field">
+    <label id="representativeDateLabel">Data da compra</label>
+    <input id="representativeBuyDate" type="date" />
+  </div>
+
+  <button class="btn" onclick="addRepresentativeItem()">Adicionar</button>
+</div>
 
             <div class="rep-table-wrap">
               <table class="rep-table">
@@ -1181,7 +1344,7 @@
         description: item.produto_descricao || "",
         value: Number(item.valor_comprado || 0),
         buyDate: item.data_compra,
-        year: Number(item.ano || (item.data_compra ? item.data_compra.slice(0, 4) : new Date().getFullYear())),
+        year: Number(item.data_compra ? item.data_compra.slice(0, 4) : item.ano || new Date().getFullYear()),
         payments: representativePayments.filter(payment => Number(payment.itemId) === Number(item.id))
       }));
 
@@ -1728,8 +1891,6 @@
       if (monthTotal) monthTotal.innerText = formatMoney(total);
     }
 
-
-
     function formatDateBR(dateString) {
       if (!dateString) return "-";
       const [year, month, day] = String(dateString).split("-");
@@ -1737,17 +1898,33 @@
       return `${day}/${month}/${year}`;
     }
 
+    function getRepresentativeItemYear(item) {
+      return Number(String(item?.buyDate || "").slice(0, 4)) ||
+        Number(item?.ano || item?.year) ||
+        new Date().getFullYear();
+    }
+
     function setupRepresentativeYears() {
       const select = document.getElementById("representativeYear");
       if (!select) return;
 
       const currentYear = new Date().getFullYear();
-      const years = new Set([currentYear, currentYear + 1, selectedRepresentativeYear]);
-      representativeItems.forEach(item => years.add(Number(item.year || currentYear)));
 
-      select.innerHTML = Array.from(years)
-        .filter(Boolean)
-        .sort((a, b) => b - a)
+      const years = Array.from(
+        new Set([
+          currentYear,
+          selectedRepresentativeYear,
+          ...representativeItems
+            .map(item => getRepresentativeItemYear(item))
+            .filter(Boolean)
+        ])
+      ).sort((a, b) => b - a);
+
+      if (!years.includes(Number(selectedRepresentativeYear))) {
+        selectedRepresentativeYear = currentYear;
+      }
+
+      select.innerHTML = years
         .map(year => `<option value="${year}" ${Number(year) === Number(selectedRepresentativeYear) ? "selected" : ""}>${year}</option>`)
         .join("");
     }
@@ -1759,46 +1936,147 @@
       renderRepresentativeControl();
     }
 
-    async function addRepresentativeItem() {
+
+    function toggleRepresentativeType() {
+      const type = document.getElementById("representativeType")?.value || "purchase";
+      const boughtField = document.getElementById("representativeBoughtField");
+      const paidField = document.getElementById("representativePaidField");
+      const dateLabel = document.getElementById("representativeDateLabel");
+      const boughtInput = document.getElementById("representativeValue");
+      const paidInput = document.getElementById("representativePaymentValue");
+
+      if (type === "payment") {
+        if (boughtField) boughtField.style.display = "none";
+        if (paidField) paidField.style.display = "";
+        if (dateLabel) dateLabel.innerText = "Data do pagamento";
+        if (boughtInput) boughtInput.value = "";
+      } else {
+        if (boughtField) boughtField.style.display = "";
+        if (paidField) paidField.style.display = "none";
+        if (dateLabel) dateLabel.innerText = "Data da compra";
+        if (paidInput) paidInput.value = "";
+      }
+    }
+
+async function addRepresentativeItem() {
+      const type = document.getElementById("representativeType")?.value || "purchase";
       const descriptionInput = document.getElementById("representativeDescription");
       const valueInput = document.getElementById("representativeValue");
+      const paymentValueInput = document.getElementById("representativePaymentValue");
       const buyDateInput = document.getElementById("representativeBuyDate");
 
-      const description = descriptionInput?.value.trim();
-      const value = Number(valueInput?.value || 0);
-      const buyDate = buyDateInput?.value;
-      const year = buyDate ? Number(buyDate.slice(0, 4)) : selectedRepresentativeYear;
+      const description = descriptionInput?.value.trim() || (type === "payment" ? "Pagamento" : "");
+      const boughtValue = Number(String(valueInput?.value || 0).replace(',', '.'));
+      const paymentValue = Number(String(paymentValueInput?.value || 0).replace(',', '.'));
+      const dateValue = buyDateInput?.value;
+      const year = Number((dateValue || "").slice(0, 4)) || Number(selectedRepresentativeYear);
 
-      if (!description || !value || !buyDate) {
-        alert("Preencha produto/descrição, valor comprado e data da compra.");
+      if (!description) {
+        alert("Preencha produto/descrição.");
         return;
       }
 
-      const payload = {
-        produto_descricao: description,
-        valor_comprado: value,
-        data_compra: buyDate,
-        ano: year
-      };
+      if (!dateValue) {
+        alert(type === "payment" ? "Informe a data do pagamento." : "Informe a data da compra.");
+        return;
+      }
+
+      if (type === "purchase" && boughtValue <= 0) {
+        alert("Informe o valor comprado.");
+        return;
+      }
+
+      if (type === "payment" && paymentValue <= 0) {
+        alert('Informe o valor pago.');
+        return;
+      }
 
       if (!SUPABASE_CONFIGURADO) {
-        representativeItems.unshift({ id: Date.now(), description, value, buyDate, year, payments: [] });
-        selectedRepresentativeYear = year;
+        const itemId = Date.now();
+        const payment = type === "payment"
+          ? { id: itemId + 1, itemId, value: paymentValue, paymentDate: dateValue }
+          : null;
+
+        representativeItems.unshift({
+          id: itemId,
+          description,
+          value: type === "purchase" ? boughtValue : 0,
+          buyDate: dateValue,
+          year,
+          payments: payment ? [payment] : []
+        });
+
+        if (payment) representativePayments.unshift(payment);
+
         if (descriptionInput) descriptionInput.value = "";
         if (valueInput) valueInput.value = "";
+        if (paymentValueInput) paymentValueInput.value = "";
         if (buyDateInput) buyDateInput.value = todayISO();
+        toggleRepresentativeType();
+        selectedRepresentativeYear = year;
+        setupRepresentativeYears();
         renderRepresentativeControl();
         return;
       }
 
-      const result = await db.from("controle_representante_sueli").insert(payload).select();
-      if (result.error) return showError(result.error);
+      const insertResult = await db
+        .from("controle_representante_sueli")
+        .insert({
+          produto_descricao: description,
+          valor_comprado: type === "purchase" ? boughtValue : 0,
+          data_compra: dateValue,
+          ano: year
+        })
+        .select()
+        .single();
 
-      selectedRepresentativeYear = year;
+      if (insertResult.error) return showError(insertResult.error);
+
+      const newItem = {
+        id: insertResult.data.id,
+        description: insertResult.data.produto_descricao || description,
+        value: Number(insertResult.data.valor_comprado || (type === "purchase" ? boughtValue : 0)),
+        buyDate: insertResult.data.data_compra || dateValue,
+        year,
+        payments: []
+      };
+
+      if (type === "payment") {
+        const paymentInsert = await db
+          .from("controle_representante_sueli_pagamentos")
+          .insert({
+            item_id: insertResult.data.id,
+            valor_pago: paymentValue,
+            data_pagamento: dateValue
+          })
+          .select()
+          .single();
+
+        if (paymentInsert.error) return showError(paymentInsert.error);
+
+        const newPayment = {
+          id: paymentInsert.data.id,
+          itemId: Number(insertResult.data.id),
+          value: Number(paymentInsert.data.valor_pago || paymentValue),
+          paymentDate: paymentInsert.data.data_pagamento || dateValue
+        };
+
+        newItem.payments = [newPayment];
+        representativePayments.unshift(newPayment);
+      }
+
+      representativeItems = [newItem, ...representativeItems.filter(item => Number(item.id) !== Number(newItem.id))];
+
       if (descriptionInput) descriptionInput.value = "";
       if (valueInput) valueInput.value = "";
+      if (paymentValueInput) paymentValueInput.value = "";
       if (buyDateInput) buyDateInput.value = todayISO();
-      await loadData();
+      toggleRepresentativeType();
+
+      selectedRepresentativeYear = year;
+      setupRepresentativeYears();
+      renderRepresentativeControl();
+      loadData();
     }
 
     function getRepresentativePaidTotal(item) {
@@ -1809,54 +2087,109 @@
       return Math.max(0, Number(item.value || 0) - getRepresentativePaidTotal(item));
     }
 
-    async function markRepresentativeAsPaid(id) {
-      const item = representativeItems.find(item => Number(item.id) === Number(id));
-      if (!item) return;
+let representativePaymentItemId = null;
+let representativePaymentOpenValue = 0;
 
-      const openValue = getRepresentativeOpenValue(item);
-      if (openValue <= 0) {
-        alert("Esse item já está totalmente pago.");
-        return;
-      }
+async function markRepresentativeAsPaid(id) {
+  const item = representativeItems.find(item => Number(item.id) === Number(id));
+  if (!item) return;
 
-      const valueText = prompt("Qual valor foi pago? Valor em aberto: " + formatMoney(openValue), String(openValue.toFixed(2)).replace(".", ","));
-      if (!valueText) return;
+  const openValue = getRepresentativeOpenValue(item);
 
-      const paymentValue = Number(valueText.replace(".", "").replace(",", "."));
-      if (!paymentValue || paymentValue <= 0) {
-        alert("Informe um valor de pagamento válido.");
-        return;
-      }
+  if (openValue <= 0) {
+    alert("Esse item já está totalmente pago.");
+    return;
+  }
 
-      if (paymentValue > openValue) {
-        alert("O valor pago não pode ser maior que o valor em aberto.");
-        return;
-      }
+  representativePaymentItemId = id;
+  representativePaymentOpenValue = openValue;
 
-      const paymentDate = prompt("Informe a data do pagamento no formato AAAA-MM-DD:", todayISO());
-      if (!paymentDate) return;
+  document.getElementById("repPaymentSaldo").innerText =
+    "Saldo em aberto: " + formatMoney(openValue);
 
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
-        alert("Use o formato AAAA-MM-DD. Exemplo: 2026-05-06");
-        return;
-      }
+  document.getElementById("repPaymentValue").value = "";
+  document.getElementById("repPaymentDate").value = todayISO();
 
-      if (!SUPABASE_CONFIGURADO) {
-        const payment = { id: Date.now(), itemId: Number(id), value: paymentValue, paymentDate };
-        representativePayments.unshift(payment);
-        representativeItems = representativeItems.map(item => Number(item.id) === Number(id) ? { ...item, payments: [payment, ...(item.payments || [])] } : item);
-        renderRepresentativeControl();
-        return;
-      }
+  document.getElementById("repPaymentModal")
+    .classList.add("active");
+}
 
-      const result = await db.from("controle_representante_sueli_pagamentos").insert({
-        item_id: id,
-        valor_pago: paymentValue,
-        data_pagamento: paymentDate
-      });
-      if (result.error) return showError(result.error);
-      await loadData();
-    }
+function closeRepresentativePaymentModal() {
+  document.getElementById("repPaymentModal")
+    .classList.remove("active");
+}
+
+async function saveRepresentativePaymentModal() {
+  const paymentValue = Number(
+    document.getElementById("repPaymentValue").value
+  );
+
+  const paymentDate =
+    document.getElementById("repPaymentDate").value;
+
+  if (!paymentValue || paymentValue <= 0) {
+    alert("Informe um valor válido.");
+    return;
+  }
+
+  if (paymentValue > representativePaymentOpenValue) {
+    alert("O valor pago não pode ser maior que o valor em aberto.");
+    return;
+  }
+
+  if (!SUPABASE_CONFIGURADO) {
+    const payment = {
+      id: Date.now(),
+      itemId: Number(representativePaymentItemId),
+      value: paymentValue,
+      paymentDate
+    };
+
+    representativePayments.unshift(payment);
+
+    representativeItems = representativeItems.map(item =>
+      Number(item.id) === Number(representativePaymentItemId)
+        ? { ...item, payments: [payment, ...(item.payments || [])] }
+        : item
+    );
+
+    closeRepresentativePaymentModal();
+    renderRepresentativeControl();
+    return;
+  }
+
+  const result = await db
+    .from("controle_representante_sueli_pagamentos")
+    .insert({
+      item_id: representativePaymentItemId,
+      valor_pago: paymentValue,
+      data_pagamento: paymentDate
+    });
+
+  if (result.error) {
+    showError(result.error);
+    return;
+  }
+
+  const newPayment = {
+    id: Date.now(),
+    itemId: Number(representativePaymentItemId),
+    value: paymentValue,
+    paymentDate
+  };
+
+  representativePayments.unshift(newPayment);
+  representativeItems = representativeItems.map(item =>
+    Number(item.id) === Number(representativePaymentItemId)
+      ? { ...item, payments: [newPayment, ...(item.payments || [])] }
+      : item
+  );
+
+  closeRepresentativePaymentModal();
+  setupRepresentativeYears();
+  renderRepresentativeControl();
+  loadData();
+}
 
     async function undoRepresentativePayment(id) {
       const item = representativeItems.find(item => Number(item.id) === Number(id));
@@ -1877,7 +2210,13 @@
 
       const result = await db.from("controle_representante_sueli_pagamentos").delete().eq("id", lastPayment.id);
       if (result.error) return showError(result.error);
-      await loadData();
+      representativePayments = representativePayments.filter(payment => Number(payment.id) !== Number(lastPayment.id));
+      representativeItems = representativeItems.map(item => Number(item.id) === Number(id)
+        ? { ...item, payments: (item.payments || []).filter(payment => Number(payment.id) !== Number(lastPayment.id)) }
+        : item
+      );
+      renderRepresentativeControl();
+      loadData();
     }
 
     async function deleteRepresentativeItem(id) {
@@ -1891,20 +2230,32 @@
 
       const result = await db.from("controle_representante_sueli").delete().eq("id", id);
       if (result.error) return showError(result.error);
-      await loadData();
+      representativeItems = representativeItems.filter(item => Number(item.id) !== Number(id));
+      representativePayments = representativePayments.filter(payment => Number(payment.itemId) !== Number(id));
+      setupRepresentativeYears();
+      renderRepresentativeControl();
+      loadData();
     }
 
     function renderRepresentativeControl() {
       const list = document.getElementById("representativeItemsList");
       const buyDateInput = document.getElementById("representativeBuyDate");
       if (buyDateInput && !buyDateInput.value) buyDateInput.value = todayISO();
+      if (typeof toggleRepresentativeType === "function") toggleRepresentativeType();
 
       setupRepresentativeYears();
 
-      const yearItems = representativeItems.filter(item => Number(item.year) === Number(selectedRepresentativeYear));
+      const yearItems = representativeItems.filter(item =>
+        getRepresentativeItemYear(item) === Number(selectedRepresentativeYear)
+      );
       const totalBought = yearItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
       const totalPaid = yearItems.reduce((sum, item) => sum + getRepresentativePaidTotal(item), 0);
-      const totalOpen = yearItems.reduce((sum, item) => sum + getRepresentativeOpenValue(item), 0);
+
+      // O valor em aberto é o saldo geral da representante:
+      // total de compras de todos os anos menos todos os pagamentos lançados.
+      const totalBoughtAllYears = representativeItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+      const totalPaidAllYears = representativeItems.reduce((sum, item) => sum + getRepresentativePaidTotal(item), 0);
+      const totalOpen = Math.max(totalBoughtAllYears - totalPaidAllYears, 0);
 
       const totalBoughtEl = document.getElementById("representativeTotalBought");
       const totalPaidEl = document.getElementById("representativeTotalPaid");
@@ -1940,8 +2291,8 @@
           <td>${paymentsText}</td>
           <td>
             <div class="rep-actions">
-              ${openValue > 0 ? `<button class="btn" onclick="markRepresentativeAsPaid(${item.id})">Registrar pagamento</button>` : ""}
-              ${(item.payments || []).length ? `<button class="btn secondary" onclick="undoRepresentativePayment(${item.id})">Excluir último pagamento</button>` : ""}
+              ${openValue > 0 ? `` : ""}
+              ${(item.payments || []).length ? `` : ""}
               <button class="btn danger" onclick="deleteRepresentativeItem(${item.id})">Excluir</button>
             </div>
           </td>
@@ -1977,5 +2328,42 @@
     runTests();
     loadData();
   </script>
+
+<div id="repPaymentModal" class="rep-payment-modal">
+  <div class="rep-payment-box">
+    <button type="button" class="rep-payment-close" onclick="closeRepresentativePaymentModal()">×</button>
+
+    <h3>Registrar pagamento</h3>
+
+    <p class="rep-payment-subtitle">
+      Informe o valor pago e a data do pagamento.
+    </p>
+
+    <div id="repPaymentSaldo" class="rep-payment-saldo">
+      Saldo em aberto: R$ 0,00
+    </div>
+
+    <div class="rep-payment-field">
+      <label>Valor pago</label>
+      <input type="number" id="repPaymentValue" step="0.01">
+    </div>
+
+    <div class="rep-payment-field">
+      <label>Data do pagamento</label>
+      <input type="date" id="repPaymentDate">
+    </div>
+
+    <div class="rep-payment-actions">
+      <button type="button" class="rep-payment-cancel" onclick="closeRepresentativePaymentModal()">
+        Cancelar
+      </button>
+
+      <button type="button" class="rep-payment-save" onclick="saveRepresentativePaymentModal()">
+        Salvar pagamento
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
