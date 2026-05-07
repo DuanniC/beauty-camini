@@ -379,11 +379,15 @@
       box-shadow: 0 0 0 4px rgba(200,194,239,.28);
     }
 
-    .date-card input {
+    .date-card input,
+    .date-card select {
+      width: 100%;
       background: rgba(255,255,255,.18);
       border: 1px solid rgba(255,255,255,.28);
       color: white;
     }
+
+    .date-card select option { color: var(--text); }
 
     .date-card input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .85; }
 
@@ -1218,11 +1222,11 @@
           <div>
             <div class="pill">Beauty Camini • Sistema do salão</div>
             <h2 id="pageTitle">Agenda Beauty Camini</h2>
-            <p class="header-subtitle">Organize horários, procedimentos e valores em uma agenda delicada, simples e fácil de usar em qualquer aparelho.</p>
           </div>
           <div class="date-card" id="dateCard">
             <label id="dateLabel">Mês da agenda</label>
             <input type="month" id="agendaMonth" onchange="changeAgendaMonth()" />
+            <select id="representativeYear" class="header-year-select" onchange="changeRepresentativeYear()" style="display:none;"></select>
           </div>
         </header>
 
@@ -1321,17 +1325,6 @@
 
         <section id="page-sueli" class="page-section">
           <div class="card form-card" style="max-width:1120px;">
-            <div class="rep-toolbar">
-              <div>
-                <h3 style="margin-bottom:6px;">Controle de produtos da representante</h3>
-                <div class="procedure-info">Acompanhe por ano as compras, pagamentos parciais e valores que continuam em aberto.</div>
-              </div>
-              <div class="rep-year-box">
-                <label for="representativeYear">Ano</label>
-                <select id="representativeYear" onchange="changeRepresentativeYear()"></select>
-              </div>
-            </div>
-
             <div class="rep-summary-grid">
               <div class="rep-summary-card">
                 <span>Total comprado</span>
@@ -1535,14 +1528,28 @@
         novo: "Novo atendimento",
         procedimentos: "Procedimentos e valores",
         financeiro: "Resumo financeiro",
-        sueli: "Controle da representante"
+        sueli: "Controle de Compras e Pagamentos"
       };
 
       const title = document.getElementById("pageTitle");
       if (title) title.innerText = titles[page] || "Beauty Camini";
 
       const dateCard = document.getElementById("dateCard");
-      if (dateCard) dateCard.style.display = (page === "procedimentos" || page === "financeiro" || page === "sueli") ? "none" : "block";
+      const dateLabel = document.getElementById("dateLabel");
+      const agendaMonthInput = document.getElementById("agendaMonth");
+      const representativeYearSelect = document.getElementById("representativeYear");
+
+      if (dateCard) dateCard.style.display = (page === "procedimentos" || page === "financeiro") ? "none" : "block";
+
+      if (page === "sueli") {
+        if (dateLabel) dateLabel.innerText = "Ano";
+        if (agendaMonthInput) agendaMonthInput.style.display = "none";
+        if (representativeYearSelect) representativeYearSelect.style.display = "block";
+      } else {
+        if (dateLabel) dateLabel.innerText = "Mês da agenda";
+        if (agendaMonthInput) agendaMonthInput.style.display = "block";
+        if (representativeYearSelect) representativeYearSelect.style.display = "none";
+      }
 
       renderAll();
     }
