@@ -1019,6 +1019,176 @@
 }
 </style>
 
+
+<style>
+/* Ajuste responsivo específico da aba Sueli */
+#page-sueli, #page-sueli *{
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+#page-sueli .form-card{
+  width:100%;
+}
+
+#page-sueli .procedure-info,
+#page-sueli h3,
+#page-sueli label,
+#page-sueli input,
+#page-sueli select,
+#page-sueli td,
+#page-sueli th{
+  overflow-wrap:anywhere;
+}
+
+@media (max-width: 700px){
+  #page-sueli .form-card{
+    max-width:100% !important;
+    margin:0 !important;
+    padding:16px !important;
+    overflow:hidden !important;
+  }
+
+  #page-sueli .rep-toolbar{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:14px !important;
+    align-items:stretch !important;
+  }
+
+  #page-sueli .rep-year-box{
+    width:100% !important;
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+
+  #page-sueli .rep-year-box select{
+    width:100% !important;
+  }
+
+  #page-sueli .procedure-info{
+    padding:13px !important;
+    font-size:12.5px !important;
+    line-height:1.35 !important;
+    white-space:normal !important;
+  }
+
+  #page-sueli .rep-summary-grid{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+
+  #page-sueli .rep-summary-card{
+    padding:15px !important;
+    border-radius:18px !important;
+  }
+
+  #page-sueli .rep-form-grid{
+    grid-template-columns:minmax(0, 1fr) !important;
+    gap:12px !important;
+    padding:14px !important;
+    border-radius:20px !important;
+    overflow:hidden !important;
+  }
+
+  #page-sueli .rep-form-grid .field,
+  #page-sueli .rep-form-grid .btn{
+    grid-column:1 / -1 !important;
+    width:100% !important;
+    min-width:0 !important;
+  }
+
+  #page-sueli .rep-form-grid input,
+  #page-sueli .rep-form-grid select,
+  #page-sueli .rep-form-grid button{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+  }
+
+  #page-sueli .rep-table-wrap{
+    overflow:visible !important;
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+  }
+
+  #page-sueli .rep-table{
+    display:block !important;
+    width:100% !important;
+    min-width:0 !important;
+    background:transparent !important;
+  }
+
+  #page-sueli .rep-table thead{
+    display:none !important;
+  }
+
+  #page-sueli .rep-table tbody{
+    display:grid !important;
+    gap:12px !important;
+    width:100% !important;
+  }
+
+  #page-sueli .rep-table tr{
+    display:block !important;
+    width:100% !important;
+    padding:12px !important;
+    border:1px solid rgba(108,90,168,.14) !important;
+    border-radius:18px !important;
+    background:#fff !important;
+  }
+
+  #page-sueli .rep-table td{
+    display:grid !important;
+    grid-template-columns:112px minmax(0, 1fr) !important;
+    gap:10px !important;
+    align-items:start !important;
+    width:100% !important;
+    padding:10px 0 !important;
+    border-bottom:1px solid #eeeafc !important;
+    font-size:13px !important;
+    word-break:break-word !important;
+    white-space:normal !important;
+  }
+
+  #page-sueli .rep-table td:last-child{
+    border-bottom:0 !important;
+  }
+
+  #page-sueli .rep-table td::before{
+    color:#6c5aa8 !important;
+    font-weight:900 !important;
+    font-size:12px !important;
+    line-height:1.2 !important;
+  }
+
+  #page-sueli .rep-table td:nth-child(1)::before{ content:'Produto'; }
+  #page-sueli .rep-table td:nth-child(2)::before{ content:'Comprado'; }
+  #page-sueli .rep-table td:nth-child(3)::before{ content:'Data'; }
+  #page-sueli .rep-table td:nth-child(4)::before{ content:'Pago'; }
+  #page-sueli .rep-table td:nth-child(5)::before{ content:'Aberto'; }
+  #page-sueli .rep-table td:nth-child(6)::before{ content:'Status'; }
+  #page-sueli .rep-table td:nth-child(7)::before{ content:'Pagamentos'; }
+  #page-sueli .rep-table td:nth-child(8)::before{ content:'Ações'; }
+
+  #page-sueli .rep-actions{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+
+  #page-sueli .rep-actions .btn,
+  #page-sueli .rep-table td .btn{
+    width:100% !important;
+    justify-content:center !important;
+    white-space:normal !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div class="page">
