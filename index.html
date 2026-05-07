@@ -734,6 +734,140 @@
         white-space: nowrap;
       }
     }
+
+
+    .rep-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .rep-year-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+      font-weight: 800;
+    }
+
+    .rep-year-box select {
+      width: 130px;
+    }
+
+    .rep-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .rep-summary-card {
+      padding: 18px;
+      border-radius: 22px;
+      background: #f7f5ff;
+      border: 1px solid rgba(108, 90, 168, .12);
+    }
+
+    .rep-summary-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .rep-summary-card strong {
+      display: block;
+      color: var(--purple-800);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -.5px;
+    }
+
+    .rep-form-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 170px 170px auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 20px;
+      padding: 16px;
+      border-radius: 22px;
+      background: #f1edff;
+    }
+
+    .rep-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border-radius: 22px;
+      border: 1px solid rgba(108, 90, 168, .12);
+    }
+
+    .rep-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: white;
+    }
+
+    .rep-table th,
+    .rep-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid #eeeafc;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    .rep-table th {
+      background: var(--purple-100);
+      color: var(--purple-800);
+      font-weight: 900;
+    }
+
+    .rep-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .rep-status.paid {
+      color: #2d6a38;
+      background: rgba(215,255,114,.45);
+    }
+
+    .rep-status.open {
+      color: #8a4c00;
+      background: #fff0d8;
+    }
+
+    .rep-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .rep-empty {
+      padding: 20px;
+      color: var(--muted);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .rep-summary-grid,
+      .rep-form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -756,6 +890,7 @@
           <button id="btn-novo" onclick="newAppointment()">Novo</button>
           <button id="btn-procedimentos" onclick="openPage('procedimentos')">Proc.</button>
           <button id="btn-financeiro" onclick="openPage('financeiro')">Finan.</button>
+          <button id="btn-sueli" onclick="openPage('sueli')">Sueli</button>
         </nav>
       </aside>
 
@@ -865,6 +1000,72 @@
           </div>
         </section>
 
+
+
+        <section id="page-sueli" class="page-section">
+          <div class="card form-card" style="max-width:1120px;">
+            <div class="rep-toolbar">
+              <div>
+                <h3 style="margin-bottom:6px;">Controle de produtos da representante</h3>
+                <div class="procedure-info">Acompanhe por ano as compras, pagamentos parciais e valores que continuam em aberto.</div>
+              </div>
+              <div class="rep-year-box">
+                <label for="representativeYear">Ano</label>
+                <select id="representativeYear" onchange="changeRepresentativeYear()"></select>
+              </div>
+            </div>
+
+            <div class="rep-summary-grid">
+              <div class="rep-summary-card">
+                <span>Total comprado</span>
+                <strong id="representativeTotalBought">R$ 0,00</strong>
+              </div>
+              <div class="rep-summary-card">
+                <span>Total pago</span>
+                <strong id="representativeTotalPaid">R$ 0,00</strong>
+              </div>
+              <div class="rep-summary-card">
+                <span>Valor em aberto</span>
+                <strong id="representativeTotalOpen">R$ 0,00</strong>
+              </div>
+            </div>
+
+            <div class="rep-form-grid">
+              <div class="field" style="margin:0;">
+                <label>Produto e descrição</label>
+                <input id="representativeDescription" placeholder="Ex: Shampoo 1L, máscara, finalizador..." />
+              </div>
+              <div class="field" style="margin:0;">
+                <label>Valor comprado</label>
+                <input id="representativeValue" type="number" min="0" step="0.01" placeholder="0,00" />
+              </div>
+              <div class="field" style="margin:0;">
+                <label>Data da compra</label>
+                <input id="representativeBuyDate" type="date" />
+              </div>
+              <button class="btn" onclick="addRepresentativeItem()">Adicionar</button>
+            </div>
+
+            <div class="rep-table-wrap">
+              <table class="rep-table">
+                <thead>
+                  <tr>
+                    <th>Produto e descrição</th>
+                    <th>Valor comprado</th>
+                    <th>Data da compra</th>
+                    <th>Valor pago</th>
+                    <th>Valor em aberto</th>
+                    <th>Status</th>
+                    <th>Pagamentos</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="representativeItemsList"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
         <section id="page-financeiro" class="page-section">
           <div class="card form-card" style="max-width:760px;">
             <h3>Resumo financeiro</h3>
@@ -898,6 +1099,8 @@
     const db = SUPABASE_CONFIGURADO ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     let appointments = [];
+    let representativeItems = [];
+    let representativePayments = [];
     let procedures = [
       { id: 1, name: "Progressiva", price: 180, variablePrice: true },
       { id: 2, name: "Luzes", price: 250, variablePrice: true },
@@ -909,6 +1112,7 @@
     let selectedDate = todayISO();
     let selectedAgendaMonth = todayISO().slice(0, 7);
     let selectedMonth = todayISO().slice(0, 7);
+    let selectedRepresentativeYear = new Date().getFullYear();
     let editingId = null;
     let selectedProceduresForm = [];
     let isPersonalCommitment = false;
@@ -941,6 +1145,12 @@
       const schedulesResult = await db.from("schedules").select("*").order("date", { ascending: true }).order("time", { ascending: true });
       if (schedulesResult.error) return showError(schedulesResult.error);
 
+      const representativeResult = await db.from("controle_representante_sueli").select("*").order("data_compra", { ascending: false }).order("id", { ascending: false });
+      if (representativeResult.error) return showError(representativeResult.error);
+
+      const representativePaymentsResult = await db.from("controle_representante_sueli_pagamentos").select("*").order("data_pagamento", { ascending: false }).order("id", { ascending: false });
+      if (representativePaymentsResult.error) return showError(representativePaymentsResult.error);
+
       procedures = proceduresResult.data.map(item => ({
         id: item.id,
         name: item.name,
@@ -959,6 +1169,22 @@
         total: Number(item.total || 0)
       }));
 
+      representativePayments = representativePaymentsResult.data.map(item => ({
+        id: item.id,
+        itemId: Number(item.item_id),
+        value: Number(item.valor_pago || 0),
+        paymentDate: item.data_pagamento || ""
+      }));
+
+      representativeItems = representativeResult.data.map(item => ({
+        id: item.id,
+        description: item.produto_descricao || "",
+        value: Number(item.valor_comprado || 0),
+        buyDate: item.data_compra,
+        year: Number(item.ano || (item.data_compra ? item.data_compra.slice(0, 4) : new Date().getFullYear())),
+        payments: representativePayments.filter(payment => Number(payment.itemId) === Number(item.id))
+      }));
+
       renderAll();
     }
 
@@ -975,14 +1201,15 @@
         agenda: "Agenda Beauty Camini",
         novo: "Novo atendimento",
         procedimentos: "Procedimentos e valores",
-        financeiro: "Resumo financeiro"
+        financeiro: "Resumo financeiro",
+        sueli: "Controle da representante"
       };
 
       const title = document.getElementById("pageTitle");
       if (title) title.innerText = titles[page] || "Beauty Camini";
 
       const dateCard = document.getElementById("dateCard");
-      if (dateCard) dateCard.style.display = (page === "procedimentos" || page === "financeiro") ? "none" : "block";
+      if (dateCard) dateCard.style.display = (page === "procedimentos" || page === "financeiro" || page === "sueli") ? "none" : "block";
 
       renderAll();
     }
@@ -1501,6 +1728,227 @@
       if (monthTotal) monthTotal.innerText = formatMoney(total);
     }
 
+
+
+    function formatDateBR(dateString) {
+      if (!dateString) return "-";
+      const [year, month, day] = String(dateString).split("-");
+      if (!year || !month || !day) return dateString;
+      return `${day}/${month}/${year}`;
+    }
+
+    function setupRepresentativeYears() {
+      const select = document.getElementById("representativeYear");
+      if (!select) return;
+
+      const currentYear = new Date().getFullYear();
+      const years = new Set([currentYear, currentYear + 1, selectedRepresentativeYear]);
+      representativeItems.forEach(item => years.add(Number(item.year || currentYear)));
+
+      select.innerHTML = Array.from(years)
+        .filter(Boolean)
+        .sort((a, b) => b - a)
+        .map(year => `<option value="${year}" ${Number(year) === Number(selectedRepresentativeYear) ? "selected" : ""}>${year}</option>`)
+        .join("");
+    }
+
+    function changeRepresentativeYear() {
+      const select = document.getElementById("representativeYear");
+      if (!select) return;
+      selectedRepresentativeYear = Number(select.value || new Date().getFullYear());
+      renderRepresentativeControl();
+    }
+
+    async function addRepresentativeItem() {
+      const descriptionInput = document.getElementById("representativeDescription");
+      const valueInput = document.getElementById("representativeValue");
+      const buyDateInput = document.getElementById("representativeBuyDate");
+
+      const description = descriptionInput?.value.trim();
+      const value = Number(valueInput?.value || 0);
+      const buyDate = buyDateInput?.value;
+      const year = buyDate ? Number(buyDate.slice(0, 4)) : selectedRepresentativeYear;
+
+      if (!description || !value || !buyDate) {
+        alert("Preencha produto/descrição, valor comprado e data da compra.");
+        return;
+      }
+
+      const payload = {
+        produto_descricao: description,
+        valor_comprado: value,
+        data_compra: buyDate,
+        ano: year
+      };
+
+      if (!SUPABASE_CONFIGURADO) {
+        representativeItems.unshift({ id: Date.now(), description, value, buyDate, year, payments: [] });
+        selectedRepresentativeYear = year;
+        if (descriptionInput) descriptionInput.value = "";
+        if (valueInput) valueInput.value = "";
+        if (buyDateInput) buyDateInput.value = todayISO();
+        renderRepresentativeControl();
+        return;
+      }
+
+      const result = await db.from("controle_representante_sueli").insert(payload).select();
+      if (result.error) return showError(result.error);
+
+      selectedRepresentativeYear = year;
+      if (descriptionInput) descriptionInput.value = "";
+      if (valueInput) valueInput.value = "";
+      if (buyDateInput) buyDateInput.value = todayISO();
+      await loadData();
+    }
+
+    function getRepresentativePaidTotal(item) {
+      return (item.payments || []).reduce((sum, payment) => sum + Number(payment.value || 0), 0);
+    }
+
+    function getRepresentativeOpenValue(item) {
+      return Math.max(0, Number(item.value || 0) - getRepresentativePaidTotal(item));
+    }
+
+    async function markRepresentativeAsPaid(id) {
+      const item = representativeItems.find(item => Number(item.id) === Number(id));
+      if (!item) return;
+
+      const openValue = getRepresentativeOpenValue(item);
+      if (openValue <= 0) {
+        alert("Esse item já está totalmente pago.");
+        return;
+      }
+
+      const valueText = prompt("Qual valor foi pago? Valor em aberto: " + formatMoney(openValue), String(openValue.toFixed(2)).replace(".", ","));
+      if (!valueText) return;
+
+      const paymentValue = Number(valueText.replace(".", "").replace(",", "."));
+      if (!paymentValue || paymentValue <= 0) {
+        alert("Informe um valor de pagamento válido.");
+        return;
+      }
+
+      if (paymentValue > openValue) {
+        alert("O valor pago não pode ser maior que o valor em aberto.");
+        return;
+      }
+
+      const paymentDate = prompt("Informe a data do pagamento no formato AAAA-MM-DD:", todayISO());
+      if (!paymentDate) return;
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+        alert("Use o formato AAAA-MM-DD. Exemplo: 2026-05-06");
+        return;
+      }
+
+      if (!SUPABASE_CONFIGURADO) {
+        const payment = { id: Date.now(), itemId: Number(id), value: paymentValue, paymentDate };
+        representativePayments.unshift(payment);
+        representativeItems = representativeItems.map(item => Number(item.id) === Number(id) ? { ...item, payments: [payment, ...(item.payments || [])] } : item);
+        renderRepresentativeControl();
+        return;
+      }
+
+      const result = await db.from("controle_representante_sueli_pagamentos").insert({
+        item_id: id,
+        valor_pago: paymentValue,
+        data_pagamento: paymentDate
+      });
+      if (result.error) return showError(result.error);
+      await loadData();
+    }
+
+    async function undoRepresentativePayment(id) {
+      const item = representativeItems.find(item => Number(item.id) === Number(id));
+      const lastPayment = item?.payments?.[0];
+      if (!lastPayment) return;
+
+      if (!confirm("Deseja excluir o último pagamento deste item?")) return;
+
+      if (!SUPABASE_CONFIGURADO) {
+        representativePayments = representativePayments.filter(payment => Number(payment.id) !== Number(lastPayment.id));
+        representativeItems = representativeItems.map(item => Number(item.id) === Number(id)
+          ? { ...item, payments: (item.payments || []).filter(payment => Number(payment.id) !== Number(lastPayment.id)) }
+          : item
+        );
+        renderRepresentativeControl();
+        return;
+      }
+
+      const result = await db.from("controle_representante_sueli_pagamentos").delete().eq("id", lastPayment.id);
+      if (result.error) return showError(result.error);
+      await loadData();
+    }
+
+    async function deleteRepresentativeItem(id) {
+      if (!confirm("Deseja excluir este item?")) return;
+
+      if (!SUPABASE_CONFIGURADO) {
+        representativeItems = representativeItems.filter(item => Number(item.id) !== Number(id));
+        renderRepresentativeControl();
+        return;
+      }
+
+      const result = await db.from("controle_representante_sueli").delete().eq("id", id);
+      if (result.error) return showError(result.error);
+      await loadData();
+    }
+
+    function renderRepresentativeControl() {
+      const list = document.getElementById("representativeItemsList");
+      const buyDateInput = document.getElementById("representativeBuyDate");
+      if (buyDateInput && !buyDateInput.value) buyDateInput.value = todayISO();
+
+      setupRepresentativeYears();
+
+      const yearItems = representativeItems.filter(item => Number(item.year) === Number(selectedRepresentativeYear));
+      const totalBought = yearItems.reduce((sum, item) => sum + Number(item.value || 0), 0);
+      const totalPaid = yearItems.reduce((sum, item) => sum + getRepresentativePaidTotal(item), 0);
+      const totalOpen = yearItems.reduce((sum, item) => sum + getRepresentativeOpenValue(item), 0);
+
+      const totalBoughtEl = document.getElementById("representativeTotalBought");
+      const totalPaidEl = document.getElementById("representativeTotalPaid");
+      const totalOpenEl = document.getElementById("representativeTotalOpen");
+
+      if (totalBoughtEl) totalBoughtEl.innerText = formatMoney(totalBought);
+      if (totalPaidEl) totalPaidEl.innerText = formatMoney(totalPaid);
+      if (totalOpenEl) totalOpenEl.innerText = formatMoney(totalOpen);
+      if (!list) return;
+
+      if (!yearItems.length) {
+        list.innerHTML = `<tr><td colspan="8"><div class="rep-empty">Nenhum item cadastrado para ${selectedRepresentativeYear}.</div></td></tr>`;
+        return;
+      }
+
+      list.innerHTML = yearItems.map(item => {
+        const paidTotal = getRepresentativePaidTotal(item);
+        const openValue = getRepresentativeOpenValue(item);
+        const status = openValue <= 0 ? "Pago" : paidTotal > 0 ? "Parcial" : "Em aberto";
+        const statusClass = openValue <= 0 ? "paid" : "open";
+        const paymentsText = (item.payments || []).length
+          ? item.payments.map(payment => `${formatMoney(payment.value)} em ${formatDateBR(payment.paymentDate)}`).join("<br>")
+          : "-";
+
+        return `
+        <tr>
+          <td>${item.description}</td>
+          <td>${formatMoney(item.value)}</td>
+          <td>${formatDateBR(item.buyDate)}</td>
+          <td>${formatMoney(paidTotal)}</td>
+          <td>${formatMoney(openValue)}</td>
+          <td><span class="rep-status ${statusClass}">${status}</span></td>
+          <td>${paymentsText}</td>
+          <td>
+            <div class="rep-actions">
+              ${openValue > 0 ? `<button class="btn" onclick="markRepresentativeAsPaid(${item.id})">Registrar pagamento</button>` : ""}
+              ${(item.payments || []).length ? `<button class="btn secondary" onclick="undoRepresentativePayment(${item.id})">Excluir último pagamento</button>` : ""}
+              <button class="btn danger" onclick="deleteRepresentativeItem(${item.id})">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `}).join("");
+    }
+
     function renderAll() {
       const agendaMonthInput = document.getElementById("agendaMonth");
       const clientDateInput = document.getElementById("clientDate");
@@ -1517,6 +1965,7 @@
       renderSelectedProcedures();
       renderProceduresList();
       renderFinancial();
+      renderRepresentativeControl();
     }
 
     function runTests() {
